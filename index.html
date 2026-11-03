@@ -1,247 +1,274 @@
 <!doctype html>
-<!-- Define the accessible storefront shell; JavaScript renders products and cart entries. -->
+<!-- Provide the accessible launcher shell; the UI module renders the existing games. -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#121413" />
+    <meta name="theme-color" content="#11170F" />
     <meta
       name="description"
-      content="Discover your next adventure at Respawn Shop. Browse a curated demo collection of digital PC games."
+      content="Explore a non-commercial PC game storefront demo. Prices are illustrative; no official affiliation."
     />
-    <link rel="icon" type="image/svg+xml" href="/images/respawn.svg" />
-    <link rel="stylesheet" href="/src/modules/style.css" />
-    <title>Respawn Shop — Find your next world.</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHJ4PSIxMSIgZmlsbD0iI2M0ZjU2OCIvPjxnIGZpbGw9IiMxYjI2MTQiPjxwYXRoIGQ9Ik0xMiAzMlYyMGw4LThoMTJ2N0gyM2wtNCA0djl6Ii8+PHBhdGggZD0iTTIzIDI1aDEzdjdIMjN6Ii8+PC9nPjwvc3ZnPg=="
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Unbounded:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+    <title>Respawn Shop</title>
   </head>
-  <body>
-    <a class="skip-link" href="#catalog">Skip to games</a>
-    <div class="announcement-bar">
-      <span>NEW WORLDS. GREAT STORIES.</span
-      ><span
-        >Your next adventure starts here <span aria-hidden="true">↗</span></span
+  <body id="home">
+    <a class="skip-link" href="#catalog">Skip to library</a>
+    <nav class="navigation" aria-label="Main navigation">
+      <a
+        class="rail-mark"
+        href="#home"
+        aria-label="Respawn Shop home"
+        title="Respawn Shop home"
+        >r<span>.</span></a
       >
-    </div>
-    <header class="site-header container">
-      <a class="brand" href="#" aria-label="Respawn Shop home"
-        ><img src="/images/respawn.svg" width="38" height="38" alt="" /><span
-          >respawn<span class="brand-shop">shop</span
-          ><span class="brand-dot">.</span></span
-        ></a
+      <a class="nav-link" href="#home" aria-label="Home" title="Home"
+        ><svg
+          viewBox="0 0 24 24"
+          width="22"
+          height="22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m3 10 9-7 9 7v10H3Z" />
+          <path d="M9 20v-7h6v7" /></svg
+        ><span class="nav-label">Home</span></a
       >
-      <nav aria-label="Main navigation">
-        <a class="nav-active" href="#catalog">Browse games</a
-        ><a href="#about-games">Our philosophy</a>
-      </nav>
+      <a
+        class="nav-link"
+        href="#catalog"
+        aria-label="Browse games"
+        title="Browse games"
+        ><svg
+          viewBox="0 0 24 24"
+          width="22"
+          height="22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" /></svg
+        ><span class="nav-label">Browse</span></a
+      >
       <button
-        class="cart-trigger"
+        class="nav-link"
         id="open-cart"
         type="button"
+        aria-label="Open cart, 0 items"
         aria-haspopup="dialog"
         aria-controls="cart-dialog"
+        title="Cart"
       >
         <svg
           viewBox="0 0 24 24"
-          width="20"
-          height="20"
+          width="22"
+          height="22"
           fill="none"
           stroke="currentColor"
-          stroke-width="1.7"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
           aria-hidden="true"
         >
-          <path d="M5 7h14l1 14H4L5 7Z" />
+          <path d="M5 7h14l1 14H4Z" />
           <path d="M8 8V6a4 4 0 0 1 8 0v2" /></svg
-        ><span>Cart</span><span id="cart-count" class="cart-count">0</span>
+        ><span class="nav-label">Cart</span
+        ><span id="cart-count" class="cart-count">0</span>
       </button>
-    </header>
-    <main>
-      <section class="hero container" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="eyebrow">
-            <span class="status-dot" aria-hidden="true"></span> YOUR NEXT
-            ADVENTURE STARTS HERE
-          </p>
-          <h1 id="hero-title">PRESS PLAY.<br /><span>GO SOMEWHERE.</span></h1>
-          <p class="hero-description">
-            New worlds. Unforgettable stories. One more turn.<br
-              class="desktop-break"
-            />
-            Find the next game you can’t stop thinking about.
-          </p>
-          <a class="button button-lime" href="#catalog"
-            >Explore the games <span aria-hidden="true">↗</span></a
-          >
-          <div class="hero-note">
-            <span class="tiny-cross" aria-hidden="true">✳</span
-            ><span>Digital PC games. Picked for your kind of play.</span>
-          </div>
-        </div>
-        <div class="hero-art">
-          <span class="art-coordinate" aria-hidden="true"
-            >RS / FEATURED WORLD 001</span
-          >
-          <div class="orbit-ring ring-one" aria-hidden="true"></div>
-          <div class="orbit-ring ring-two" aria-hidden="true"></div>
-          <span class="art-word" aria-hidden="true">PLAY.</span>
-          <img
-            class="hero-cover"
-            src="/images/games/echoes-of-orion.svg"
-            alt="Echoes of Orion cover with a distant planet above an alien landscape"
-            width="640"
-            height="400"
-            fetchpriority="high"
-          />
-          <div class="product-callout">
-            <span class="status-dot" aria-hidden="true"></span>
-            <div>
-              <strong>ECHOES OF ORION</strong
-              ><span>Your crew. Your ship. An uncharted frontier.</span>
-            </div>
-            <a href="#catalog" aria-label="Browse the game collection">↗</a>
-          </div>
-          <span class="art-caption">EXPLORE BEYOND THE EVERYDAY.</span>
-        </div>
-      </section>
-      <div class="benefits container" aria-label="Store highlights">
-        <p><span aria-hidden="true">⌘</span> Games for every playstyle</p>
-        <p><span aria-hidden="true">◇</span> Digital PC editions</p>
-        <p>
-          <span aria-hidden="true">↗</span> Fictional games &middot; Frontend
-          demo
-        </p>
-      </div>
-      <section
-        id="catalog"
-        class="catalog-section container"
-        aria-labelledby="catalog-title"
-      >
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">THE RESPAWN COLLECTION</p>
-            <h2 id="catalog-title">
-              Your next obsession<span class="lime-text">.</span>
-            </h2>
-          </div>
-          <p>Big adventures. Little escapes. Find your kind of game.</p>
-        </div>
-        <form
-          class="catalog-controls"
-          id="catalog-controls"
-          role="search"
-          aria-label="Find digital games"
+    </nav>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="#home" aria-label="Respawn Shop home"
+          >respawn<span class="brand-dot">/</span
+          ><span class="brand-shop">shop</span></a
         >
-          <div class="search-field">
-            <label for="search">Search games</label>
-            <div class="input-wrap">
-              <svg
-                viewBox="0 0 24 24"
-                width="20"
-                height="20"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.7"
-                aria-hidden="true"
+        <span class="header-note">DIGITAL PC GAMES</span>
+      </header>
+      <main>
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-heading">
+            <h1 id="hero-title">
+              NEXT WORLD<span>LOADING<span class="heading-dot">.</span></span>
+            </h1>
+            <a class="text-link" href="#catalog"
+              >Explore games <span aria-hidden="true">&#8599;</span></a
+            >
+          </div>
+          <div
+            id="hero-covers"
+            class="hero-covers"
+            aria-label="Explore game worlds"
+          ></div>
+        </section>
+        <section class="featured-section" aria-labelledby="featured-heading">
+          <div class="section-line">
+            <h2 id="featured-heading">IN THE SPOTLIGHT</h2>
+            <span aria-hidden="true">&#8599;</span>
+          </div>
+          <div id="featured-game"></div>
+        </section>
+        <section
+          id="catalog"
+          class="catalog-section"
+          aria-labelledby="catalog-title"
+        >
+          <div class="library-heading">
+            <h2 id="catalog-title">
+              LIBRARY<span class="heading-dot">/</span>
+            </h2>
+            <form
+              id="catalog-controls"
+              class="catalog-controls"
+              role="search"
+              aria-label="Find digital games"
+            >
+              <div class="search-field">
+                <label class="visually-hidden" for="search">Search games</label
+                ><svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="10.5" cy="10.5" r="6.5" />
+                  <path d="m16 16 4 4" /></svg
+                ><input
+                  id="search"
+                  name="search"
+                  type="search"
+                  placeholder="Search games"
+                  autocomplete="off"
+                />
+              </div>
+              <button
+                id="filter-toggle"
+                class="filter-toggle"
+                type="button"
+                aria-expanded="false"
+                aria-controls="filter-panel"
               >
-                <circle cx="10.5" cy="10.5" r="6.5" />
-                <path d="m16 16 4 4" /></svg
-              ><input
-                id="search"
-                name="search"
-                type="search"
-                placeholder="What will you play next?"
-                autocomplete="off"
-              />
-            </div>
+                <svg
+                  viewBox="0 0 24 24"
+                  width="22"
+                  height="22"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M4 7h16M4 17h16" />
+                  <circle cx="9" cy="7" r="3" fill="#263222" />
+                  <circle cx="16" cy="17" r="3" fill="#263222" /></svg
+                ><span>Filter</span
+                ><span id="filter-indicator" class="filter-indicator" hidden
+                  >On</span
+                >
+              </button>
+              <div id="filter-panel" class="filter-panel" hidden>
+                <div class="filter-heading">
+                  <strong>Refine library</strong
+                  ><button
+                    id="close-filters"
+                    class="icon-button"
+                    type="button"
+                    aria-label="Close filters"
+                  >
+                    &#215;
+                  </button>
+                </div>
+                <label for="category">Genre</label
+                ><select id="category" name="category">
+                  <option value="all">All games</option>
+                </select>
+                <label for="sort">Sort by price</label
+                ><select id="sort" name="sort">
+                  <option value="default">Default</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                </select>
+                <button
+                  class="text-button"
+                  id="reset-panel-filters"
+                  type="button"
+                >
+                  Reset filters
+                </button>
+              </div>
+            </form>
           </div>
-          <div>
-            <label for="category">Genre</label
-            ><select id="category" name="category">
-              <option value="all">All genres</option>
-            </select>
-          </div>
-          <div>
-            <label for="sort">Sort by</label
-            ><select id="sort" name="sort">
-              <option value="default">Default</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-            </select>
-          </div>
-        </form>
-        <div class="results-toolbar">
-          <p id="results-count" role="status" aria-live="polite"></p>
-          <span>CURATED FOR YOUR NEXT SESSION</span>
-        </div>
-        <div class="product-grid" id="product-grid"></div>
-        <div id="catalog-empty" class="empty-state" hidden>
-          <span class="empty-symbol" aria-hidden="true">⌕</span>
-          <h3>No games found. Yet.</h3>
-          <p>
-            Try another game title or reset your filters to explore the
-            collection.
+          <p class="price-note">
+            Illustrative demo prices in USD &middot; No games are sold.
           </p>
-          <button id="reset-filters" class="button button-lime" type="button">
-            Reset filters
-          </button>
-        </div>
-      </section>
-      <section
-        class="philosophy container"
-        id="about-games"
-        aria-labelledby="philosophy-title"
-      >
-        <div>
-          <p class="eyebrow">SO MANY WORLDS. YOUR NEXT FAVORITE.</p>
-          <h2 id="philosophy-title">Make room for<br />your kind of play.</h2>
-        </div>
-        <div>
-          <p>
-            A sprawling RPG, a neon-lit race, or a quiet afternoon on your own
-            little farm. Whatever your mood, there’s a world waiting for you.
-            Explore our fictional digital PC games and find your next escape.
-          </p>
-          <a href="#catalog" class="text-link"
-            >Find your next adventure <span aria-hidden="true">↗</span></a
-          >
-        </div>
-        <span class="philosophy-mark" aria-hidden="true">↗</span>
-      </section>
-      <section class="newsletter container" aria-labelledby="newsletter-title">
-        <div>
-          <p class="eyebrow">STAY IN THE GAME</p>
-          <h2 id="newsletter-title">Keep your next adventure on the radar.</h2>
-          <p>
-            A local sign-up demo. No emails are sent or subscriptions created.
-          </p>
-        </div>
-        <form id="newsletter-form">
-          <label for="email">Email address</label>
-          <div class="newsletter-input">
-            <input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@example.com"
-              required
-              maxlength="254"
-              autocomplete="email"
-            /><button class="button button-lime" type="submit">
-              Count me in <span aria-hidden="true">↗</span>
+          <p
+            id="results-count"
+            class="results-count"
+            role="status"
+            aria-live="polite"
+          ></p>
+          <div class="product-grid" id="product-grid"></div>
+          <div id="catalog-empty" class="empty-state" hidden>
+            <h3>No games found.</h3>
+            <p>Try another title or reset your filters.</p>
+            <button id="reset-filters" class="button button-lime" type="button">
+              Reset filters
             </button>
           </div>
-          <p id="newsletter-status" role="status"></p>
-        </form>
-      </section>
-    </main>
-    <footer class="site-footer container">
-      <a class="brand" href="#"
-        ><img src="/images/respawn.svg" width="30" height="30" alt="" /><span
-          >respawn<span class="brand-shop">shop</span
-          ><span class="brand-dot">.</span></span
-        ></a
-      >
-      <p>Find your next world.</p>
-      <p>© 2026 Respawn Shop · Student demo</p>
-    </footer>
+        </section>
+      </main>
+      <footer class="site-footer">
+        <p>
+          Non-commercial demo &middot; No official affiliation.<br />Game
+          artwork and trademarks belong to their respective owners.
+        </p>
+        <details class="newsletter">
+          <summary>Newsletter demo</summary>
+          <form id="newsletter-form">
+            <label for="email">Email address</label>
+            <div class="newsletter-input">
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                maxlength="254"
+                autocomplete="email"
+                placeholder="you@example.com"
+              /><button class="button" type="submit">Sign up</button>
+            </div>
+            <p class="muted">Local demo. No email is sent or saved.</p>
+            <p id="newsletter-status" role="status"></p>
+          </form>
+        </details>
+      </footer>
+    </div>
     <dialog id="cart-dialog" aria-labelledby="cart-title">
       <div class="cart-shell">
         <div class="cart-header">
@@ -275,8 +302,8 @@
             <span>Subtotal</span><strong id="cart-total">$0.00</strong>
           </div>
           <p class="muted">
-            USD &middot; Frontend demo. No purchases, downloads, or game keys
-            are provided.
+            USD &middot; Illustrative demo prices, not current store prices. No
+            purchases, downloads, or game keys are provided.
           </p>
           <p id="storage-status" role="status"></p>
           <button
@@ -289,6 +316,7 @@
         </div>
       </div>
     </dialog>
+
     <p
       class="action-status"
       id="action-status"
@@ -298,7 +326,7 @@
     ></p>
     <noscript
       ><p class="noscript-message">
-        Please enable JavaScript to browse games and use the shopping cart.
+        Enable JavaScript to browse games and use the cart.
       </p></noscript
     >
     <script type="module" src="/src/main.ts"></script>

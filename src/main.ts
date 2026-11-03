@@ -11,14 +11,14 @@ import {
   getCartTotals,
   MAX_QUANTITY,
 } from './modules/cart/cart.js';
-import { loadCart, saveCart } from './modules/storage.js';
+import { loadCart, saveCart } from './modules/cart/storage.js';
 import {
   initializeUI,
   renderCatalog,
   renderCart,
   announce,
   showStorageWarning,
-} from './modules/ui.js';
+} from './shared/ui.js';
 
 let catalogState: CatalogState = {
   search: '',

@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
-import { CART_STORAGE_KEY } from '../.test-build/modules/storage.js';
+import { CART_STORAGE_KEY } from '../.test-build/modules/cart/storage.js';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 let instance = 0;
@@ -32,21 +32,21 @@ test('4 and 11: repeated catalog changes preserve controls and one click adds ex
   const dom = await mount();
   try {
     for (let repeat = 0; repeat < 5; repeat++) {
-      change(dom, '#search', 'ECHOES', 'input');
+      change(dom, '#search', 'W', 'input');
       change(dom, '#category', 'RPG');
       change(dom, '#sort', 'price-asc');
     }
     assert.equal(document.querySelectorAll('#product-grid article').length, 2);
     assert.equal(
       document.querySelector('#product-grid article').dataset.productId,
-      'echoes-of-earth',
+      'the-witcher-3-wild-hunt',
     );
-    assert.equal(document.querySelector('#search').value, 'ECHOES');
+    assert.equal(document.querySelector('#search').value, 'W');
     assert.equal(document.querySelector('#category').value, 'RPG');
     document.querySelector('#product-grid [data-action="add"]').click();
     assert.equal(document.querySelector('#cart-count').textContent, '1');
     assert.deepEqual(JSON.parse(localStorage.getItem(CART_STORAGE_KEY)), [
-      { id: 'echoes-of-earth', quantity: 1 },
+      { id: 'the-witcher-3-wild-hunt', quantity: 1 },
     ]);
     document.querySelector('#product-grid [data-action="add"]').click();
     assert.equal(document.querySelectorAll('#cart-items article').length, 1);
@@ -61,31 +61,33 @@ test('5–9: cart buttons update count, totals, storage, and other entries immed
   const dom = await mount();
   try {
     document
-      .querySelector('[data-id="echoes-of-orion"][data-action="add"]')
+      .querySelector('[data-id="cyberpunk-2077"][data-action="add"]')
       .click();
-    document.querySelector('[data-id="neon-drift"][data-action="add"]').click();
     document
-      .querySelector('[data-id="echoes-of-orion"][data-action="increase"]')
+      .querySelector('[data-id="red-dead-redemption-2"][data-action="add"]')
+      .click();
+    document
+      .querySelector('[data-id="cyberpunk-2077"][data-action="increase"]')
       .click();
     assert.equal(document.querySelector('#cart-count').textContent, '3');
     assert.equal(document.querySelector('#cart-total').textContent, '$104.97');
     document
-      .querySelector('[data-id="echoes-of-orion"][data-action="decrease"]')
+      .querySelector('[data-id="cyberpunk-2077"][data-action="decrease"]')
       .click();
     assert.equal(document.querySelector('#cart-total').textContent, '$64.98');
     document
-      .querySelector('[data-id="echoes-of-orion"][data-action="decrease"]')
+      .querySelector('[data-id="cyberpunk-2077"][data-action="decrease"]')
       .click();
     assert.equal(document.querySelector('#cart-count').textContent, '1');
     assert.equal(document.querySelector('#cart-total').textContent, '$24.99');
     document
-      .querySelector('[data-id="echoes-of-orion"][data-action="add"]')
+      .querySelector('[data-id="cyberpunk-2077"][data-action="add"]')
       .click();
     document
-      .querySelector('[data-id="echoes-of-orion"][data-action="remove"]')
+      .querySelector('[data-id="cyberpunk-2077"][data-action="remove"]')
       .click();
     assert.deepEqual(JSON.parse(localStorage.getItem(CART_STORAGE_KEY)), [
-      { id: 'neon-drift', quantity: 1 },
+      { id: 'red-dead-redemption-2', quantity: 1 },
     ]);
     document.querySelector('#clear-cart').click();
     assert.equal(document.querySelector('#cart-count').textContent, '0');
@@ -101,10 +103,10 @@ test('5–9: cart buttons update count, totals, storage, and other entries immed
 test('10: a fresh application instance restores saved quantities and totals', async () => {
   const first = await mount();
   document
-    .querySelector('[data-id="echoes-of-orion"][data-action="add"]')
+    .querySelector('[data-id="cyberpunk-2077"][data-action="add"]')
     .click();
   document
-    .querySelector('[data-id="echoes-of-orion"][data-action="add"]')
+    .querySelector('[data-id="cyberpunk-2077"][data-action="add"]')
     .click();
   const saved = localStorage.getItem(CART_STORAGE_KEY);
   first.window.close();
@@ -121,7 +123,7 @@ test('10: a fresh application instance restores saved quantities and totals', as
 test('empty results offer a reset that clears all catalog controls', async () => {
   const dom = await mount();
   try {
-    change(dom, '#category', 'Racing');
+    change(dom, '#category', 'Action-Adventure');
     change(dom, '#sort', 'price-desc');
     change(dom, '#search', 'nothing-matches', 'input');
     assert.equal(document.querySelectorAll('#product-grid article').length, 0);
@@ -158,6 +160,93 @@ test('cart updates announce inside an open modal rather than its inert backgroun
       /2 in cart/,
     );
     assert.equal(document.querySelector('#action-status').textContent, '');
+  } finally {
+    dom.window.close();
+  }
+});
+
+test('filter disclosure supports combined controls, Escape, click-away, and reset', async () => {
+  const dom = await mount();
+  try {
+    const toggle = document.querySelector('#filter-toggle');
+    const panel = document.querySelector('#filter-panel');
+    assert.equal(panel.hidden, true);
+    toggle.click();
+    assert.equal(panel.hidden, false);
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+    change(dom, '#search', 'W', 'input');
+    change(dom, '#category', 'RPG');
+    change(dom, '#sort', 'price-asc');
+    assert.deepEqual(
+      [...document.querySelectorAll('#product-grid article')].map(
+        (card) => card.dataset.productId,
+      ),
+      ['the-witcher-3-wild-hunt', 'hogwarts-legacy'],
+    );
+    assert.equal(document.querySelector('#filter-indicator').hidden, false);
+    document.querySelector('#category').focus();
+    document.querySelector('#category').dispatchEvent(
+      new dom.window.KeyboardEvent('keydown', {
+        key: 'Escape',
+        bubbles: true,
+      }),
+    );
+    assert.equal(panel.hidden, true);
+    assert.equal(document.activeElement, toggle);
+    toggle.click();
+    document.querySelector('#hero-title').click();
+    assert.equal(panel.hidden, true);
+    toggle.click();
+    document.querySelector('#reset-panel-filters').click();
+    assert.equal(document.querySelectorAll('#product-grid article').length, 12);
+    assert.equal(document.querySelector('#search').value, '');
+    assert.equal(document.querySelector('#category').value, 'all');
+    assert.equal(document.querySelector('#sort').value, 'default');
+    assert.equal(document.querySelector('#filter-indicator').hidden, true);
+    assert.equal(panel.hidden, true);
+    assert.equal(document.activeElement.id, 'search');
+    toggle.click();
+    document.querySelector('#category').focus();
+    document.querySelector('.hero-card').focus();
+    assert.equal(panel.hidden, true);
+  } finally {
+    dom.window.close();
+  }
+});
+
+test('featured game adds through the same persistent cart as the library', async () => {
+  const dom = await mount();
+  try {
+    assert.deepEqual(
+      [...document.querySelectorAll('.hero-card strong')].map(
+        (title) => title.textContent,
+      ),
+      [
+        'God of War (2018)',
+        'Cyberpunk 2077',
+        'Elden Ring',
+        'Hogwarts Legacy',
+        'Red Dead Redemption 2',
+      ],
+    );
+    assert.equal(
+      document.querySelector('#featured-game h3').textContent,
+      'Cyberpunk 2077',
+    );
+    assert.equal(
+      document.querySelector('#featured-game img').getAttribute('src'),
+      '/images/games/cyberpunk-2077-hero.jpg',
+    );
+    document.querySelector('#featured-game [data-action="add"]').click();
+    assert.equal(document.querySelector('#cart-count').textContent, '1');
+    assert.equal(document.querySelector('#cart-total').textContent, '$39.99');
+    document.querySelector('#product-grid [data-id="cyberpunk-2077"]').click();
+    assert.equal(document.querySelectorAll('#cart-items article').length, 1);
+    assert.equal(document.querySelector('#cart-count').textContent, '2');
+    assert.equal(document.querySelector('#cart-total').textContent, '$79.98');
+    assert.deepEqual(JSON.parse(localStorage.getItem(CART_STORAGE_KEY)), [
+      { id: 'cyberpunk-2077', quantity: 2 },
+    ]);
   } finally {
     dom.window.close();
   }

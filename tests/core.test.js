@@ -1,7 +1,8 @@
 // Verify catalog composition, cart invariants, and defensive persistence with real functions.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { selectProducts } from '../.test-build/modules/catalog.js';
+import { readFile } from 'node:fs/promises';
+import { selectProducts } from '../.test-build/modules/products/catalog.js';
 import {
   addItem,
   decreaseItem,
@@ -13,7 +14,7 @@ import {
   loadCart,
   saveCart,
   CART_STORAGE_KEY,
-} from '../.test-build/modules/storage.js';
+} from '../.test-build/modules/cart/storage.js';
 import { products } from '../.test-build/modules/products/products.js';
 
 const sample = [
@@ -31,14 +32,21 @@ function memoryStorage(value = null) {
   };
 }
 
-test('catalog contains at least 12 uniquely identified complete products', () => {
-  assert.ok(products.length >= 12);
+test('catalog contains 12 uniquely identified complete games', () => {
+  assert.equal(products.length, 12);
   assert.equal(
     new Set(products.map((product) => product.id)).size,
     products.length,
   );
   for (const product of products) {
-    for (const key of ['id', 'name', 'category', 'image', 'description'])
+    for (const key of [
+      'id',
+      'name',
+      'category',
+      'developer',
+      'image',
+      'description',
+    ])
       assert.ok(product[key]);
     assert.ok(product.price > 0);
   }
@@ -175,4 +183,19 @@ test('storage access failures return safe values without throwing', () => {
   };
   assert.deepEqual(loadCart(sample, blocked), []);
   assert.equal(saveCart([{ id: 'a', quantity: 1 }], blocked), false);
+});
+
+test('every catalog cover and featured image is a local JPEG', async () => {
+  for (const product of products) {
+    for (const image of [product.image, product.featuredImage].filter(
+      Boolean,
+    )) {
+      assert.match(image, /^\/images\/games\/[a-z0-9-]+\.jpg$/);
+      const bytes = await readFile(
+        new URL('../public' + image, import.meta.url),
+      );
+      assert.equal(bytes[0], 0xff);
+      assert.equal(bytes[1], 0xd8);
+    }
+  }
 });

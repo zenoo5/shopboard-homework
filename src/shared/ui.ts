@@ -1,8 +1,12 @@
 // Own all DOM access, accessible rendering, and one-time delegated event listeners.
-import { CENTS_PER_DOLLAR, MAX_QUANTITY } from './cart/cart.js';
-import type { Product } from './products/products.types.js';
-import type { CartAction, CartItem, CartTotals } from './cart/cart.types.js';
-import type { CatalogState, PriceSort } from './products/catalog.js';
+import { CENTS_PER_DOLLAR, MAX_QUANTITY } from '../modules/cart/cart.js';
+import type { Product } from '../modules/products/products.types.js';
+import type {
+  CartAction,
+  CartItem,
+  CartTotals,
+} from '../modules/cart/cart.types.js';
+import type { CatalogState, PriceSort } from '../modules/products/catalog.js';
 
 interface UICallbacks {
   onCatalogChange: (changes: Partial<CatalogState>) => void;
@@ -69,8 +73,8 @@ export function renderCatalog(
     .map(
       (product) => `
     <article class="product-card" data-product-id="${escapeHTML(product.id)}">
-      <div class="product-image ${escapeHTML(product.color)}">${product.badge ? `<span class="product-badge">${escapeHTML(product.badge)}</span>` : ''}<img src="${escapeHTML(product.image)}" alt="${escapeHTML(product.name)} — ${escapeHTML(product.category.toLowerCase())} game cover" loading="lazy" width="400" height="280" /></div>
-      <div class="product-details"><p class="product-category">${escapeHTML(product.category)} &middot; PC &middot; Digital edition</p><div class="product-title-row"><h3>${escapeHTML(product.name)}</h3><span>${formatMoney(Math.round(product.price * CENTS_PER_DOLLAR))}</span></div><p class="product-description">${escapeHTML(product.description)}</p><button class="add-button" type="button" data-action="add" data-id="${escapeHTML(product.id)}" aria-label="Add ${escapeHTML(product.name)} to cart"><span>Add to cart</span><span aria-hidden="true">+</span></button></div>
+      <div class="product-image"><img src="${escapeHTML(product.image)}" alt="${escapeHTML(product.name)} game cover" loading="lazy" width="600" height="900" /></div>
+      <div class="product-details"><p class="product-category">${escapeHTML(product.category)}</p><div class="product-title-row"><h3>${escapeHTML(product.name)}</h3><span>${formatMoney(Math.round(product.price * CENTS_PER_DOLLAR))}</span></div><button class="add-button" type="button" data-action="add" data-id="${escapeHTML(product.id)}" aria-label="Add ${escapeHTML(product.name)} to cart"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg></button></div>
     </article>`,
     )
     .join('');
@@ -144,6 +148,28 @@ export function showStorageWarning(blocked: boolean): void {
     : '';
 }
 
+// Compose hero covers and a featured purchase from existing catalog data.
+function renderHighlights(products: Product[]): void {
+  const heroIds = [
+    'god-of-war-2018',
+    'cyberpunk-2077',
+    'elden-ring',
+    'hogwarts-legacy',
+    'red-dead-redemption-2',
+  ];
+  getElement('div', '#hero-covers').innerHTML = heroIds
+    .map((id) => {
+      const game = products.find((product) => product.id === id);
+      if (!game) return '';
+      return `<a class="hero-card" href="#catalog" aria-label="Browse games including ${escapeHTML(game.name)}"><img src="${escapeHTML(game.image)}" alt="" width="600" height="900" fetchpriority="high" /><span>${escapeHTML(game.category)}</span><strong>${escapeHTML(game.name)}</strong></a>`;
+    })
+    .join('');
+  const featured = products.find((product) => product.id === 'cyberpunk-2077');
+  if (!featured) return;
+  getElement('div', '#featured-game').innerHTML =
+    `<img class="featured-image" src="${escapeHTML(featured.featuredImage ?? featured.image)}" alt="${escapeHTML(featured.name)} promotional artwork" width="1920" height="620" /><div class="featured-details"><div><p class="product-category">${escapeHTML(featured.category)}</p><h3>${escapeHTML(featured.name)}</h3></div><span class="featured-price">${formatMoney(Math.round(featured.price * CENTS_PER_DOLLAR))}<small>Demo USD</small></span><button class="button button-lime" type="button" data-action="add" data-id="${escapeHTML(featured.id)}" aria-label="Add ${escapeHTML(featured.name)} to cart">Add to cart <span aria-hidden="true">+</span></button></div>`;
+}
+
 // Populate categories and attach controls exactly once per page document.
 export function initializeUI(
   products: Product[],
@@ -151,6 +177,21 @@ export function initializeUI(
 ): void {
   if (initializedDocuments.has(document)) return;
   initializedDocuments.add(document);
+  renderHighlights(products);
+  // Mark the current navigation destination for sighted and assistive-technology users.
+  function updateNavigation(): void {
+    const destination =
+      document.defaultView?.location.hash === '#catalog' ? '#catalog' : '#home';
+    for (const link of document.querySelectorAll<HTMLAnchorElement>(
+      '.navigation a.nav-link',
+    )) {
+      if (link.getAttribute('href') === destination)
+        link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    }
+  }
+  document.defaultView?.addEventListener('hashchange', updateNavigation);
+  updateNavigation();
   const category = getElement('select', '#category');
   for (const name of new Set(products.map((product) => product.category))) {
     const option = document.createElement('option');
@@ -175,11 +216,60 @@ export function initializeUI(
   sort.addEventListener('change', () => {
     if (isPriceSort(sort.value)) onCatalogChange({ sort: sort.value });
   });
-  getElement('button', '#reset-filters').addEventListener('click', () => {
-    getElement('form', '#catalog-controls').reset();
-    onCatalogChange({ search: '', category: 'all', sort: 'default' });
-    getElement('input', '#search').focus();
+  const filterToggle = getElement('button', '#filter-toggle');
+  const filterPanel = getElement('div', '#filter-panel');
+  const controls = getElement('form', '#catalog-controls');
+  // Keep filter visibility and the disclosure button's accessible state in sync.
+  function setFiltersOpen(open: boolean, restoreFocus = false): void {
+    filterPanel.hidden = !open;
+    filterToggle.setAttribute('aria-expanded', String(open));
+    if (restoreFocus) filterToggle.focus();
+  }
+  // Indicate a selected genre or price order even while its panel is closed.
+  function updateFilterIndicator(): void {
+    getElement('span', '#filter-indicator').hidden =
+      category.value === 'all' && sort.value === 'default';
+  }
+  category.addEventListener('change', updateFilterIndicator);
+  sort.addEventListener('change', updateFilterIndicator);
+  filterToggle.addEventListener('click', () =>
+    setFiltersOpen(filterPanel.hasAttribute('hidden')),
+  );
+  getElement('button', '#close-filters').addEventListener('click', () =>
+    setFiltersOpen(false, true),
+  );
+  controls.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !filterPanel.hidden) {
+      event.preventDefault();
+      setFiltersOpen(false, true);
+    }
   });
+  document.addEventListener('click', (event) => {
+    if (event.target instanceof Element && !controls.contains(event.target)) {
+      const focusInside = filterPanel.contains(document.activeElement);
+      setFiltersOpen(false, focusInside);
+    }
+  });
+  document.addEventListener('focusin', (event) => {
+    if (event.target instanceof Element && !controls.contains(event.target))
+      setFiltersOpen(false);
+  });
+  // Reset all combined catalog controls using the existing coordinator callback.
+  function resetFilters(): void {
+    controls.reset();
+    onCatalogChange({ search: '', category: 'all', sort: 'default' });
+    updateFilterIndicator();
+    setFiltersOpen(false);
+    search.focus();
+  }
+  getElement('button', '#reset-filters').addEventListener(
+    'click',
+    resetFilters,
+  );
+  getElement('button', '#reset-panel-filters').addEventListener(
+    'click',
+    resetFilters,
+  );
 
   // Route a single delegated product or cart button click to the coordinator.
   function handleAction(event: Event): void {
@@ -199,6 +289,7 @@ export function initializeUI(
   }
   getElement('div', '#product-grid').addEventListener('click', handleAction);
   getElement('div', '#cart-items').addEventListener('click', handleAction);
+  getElement('div', '#featured-game').addEventListener('click', handleAction);
   getElement('button', '#clear-cart').addEventListener('click', () =>
     onCartAction('clear'),
   );
