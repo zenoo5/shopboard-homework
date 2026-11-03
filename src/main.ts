@@ -1,8 +1,8 @@
 // Coordinate catalog state, cart transformations, persistence, and the UI module.
-import { products } from './products.js';
-import type { CatalogState } from './catalog.js';
-import type { CartAction, CartItem } from './cart.types.js';
-import { selectProducts } from './catalog.js';
+import { products } from './modules/products/products.js';
+import type { CatalogState } from './modules/products/catalog.js';
+import type { CartAction, CartItem } from './modules/cart/cart.types.js';
+import { selectProducts } from './modules/products/catalog.js';
 import {
   addItem,
   decreaseItem,
@@ -10,15 +10,15 @@ import {
   clearCart,
   getCartTotals,
   MAX_QUANTITY,
-} from './cart.js';
-import { loadCart, saveCart } from './storage.js';
+} from './modules/cart/cart.js';
+import { loadCart, saveCart } from './modules/storage.js';
 import {
   initializeUI,
   renderCatalog,
   renderCart,
   announce,
   showStorageWarning,
-} from './ui.js';
+} from './modules/ui.js';
 
 let catalogState: CatalogState = {
   search: '',

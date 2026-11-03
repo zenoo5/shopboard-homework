@@ -1,25 +1,25 @@
 // Verify catalog composition, cart invariants, and defensive persistence with real functions.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { selectProducts } from '../.test-build/catalog.js';
+import { selectProducts } from '../.test-build/modules/catalog.js';
 import {
   addItem,
   decreaseItem,
   removeItem,
   clearCart,
   getCartTotals,
-} from '../.test-build/cart.js';
+} from '../.test-build/modules/cart/cart.js';
 import {
   loadCart,
   saveCart,
   CART_STORAGE_KEY,
-} from '../.test-build/storage.js';
-import { products } from '../.test-build/products.js';
+} from '../.test-build/modules/storage.js';
+import { products } from '../.test-build/modules/products/products.js';
 
 const sample = [
-  { id: 'a', name: 'Alpha Keyboard', category: 'Keyboards', price: 29.99 },
-  { id: 'b', name: 'Beta Mouse', category: 'Mice', price: 10.1 },
-  { id: 'c', name: 'Gamma Keyboard', category: 'Keyboards', price: 19.5 },
+  { id: 'a', name: 'Alpha RPG', category: 'RPG', price: 29.99 },
+  { id: 'b', name: 'Beta Racer', category: 'Racing', price: 10.1 },
+  { id: 'c', name: 'Gamma RPG', category: 'RPG', price: 19.5 },
 ];
 
 // Provide an in-memory Storage substitute without involving a browser.
@@ -46,18 +46,18 @@ test('catalog contains at least 12 uniquely identified complete products', () =>
 
 test('1: name search ignores case and surrounding spaces', () => {
   assert.deepEqual(
-    selectProducts(sample, { search: ' KEYBOARD ' }).map((p) => p.id),
+    selectProducts(sample, { search: ' RPG ' }).map((p) => p.id),
     ['a', 'c'],
   );
   assert.deepEqual(
-    selectProducts(sample, { search: 'keyboard' }),
-    selectProducts(sample, { search: 'KEYBOARD' }),
+    selectProducts(sample, { search: 'rpg' }),
+    selectProducts(sample, { search: 'RPG' }),
   );
 });
 
 test('2: category selection excludes other categories; All includes every product', () => {
   assert.deepEqual(
-    selectProducts(sample, { category: 'Mice' }).map((p) => p.id),
+    selectProducts(sample, { category: 'Racing' }).map((p) => p.id),
     ['b'],
   );
   assert.equal(selectProducts(sample, { category: 'all' }).length, 3);
@@ -83,16 +83,16 @@ test('3: both price orders work without mutating source and Default restores ori
 test('4: search, category, and sorting compose; unmatched search is empty', () => {
   assert.deepEqual(
     selectProducts(sample, {
-      search: 'KEY',
-      category: 'Keyboards',
+      search: 'RPG',
+      category: 'RPG',
       sort: 'price-asc',
     }).map((p) => p.id),
     ['c', 'a'],
   );
   assert.deepEqual(
     selectProducts(sample, {
-      search: 'mouse',
-      category: 'Keyboards',
+      search: 'racer',
+      category: 'RPG',
       sort: 'price-desc',
     }),
     [],

@@ -1,8 +1,8 @@
 // Own all DOM access, accessible rendering, and one-time delegated event listeners.
-import { CENTS_PER_DOLLAR, MAX_QUANTITY } from './cart.js';
-import type { Product } from './products.types.js';
-import type { CartAction, CartItem, CartTotals } from './cart.types.js';
-import type { CatalogState, PriceSort } from './catalog.js';
+import { CENTS_PER_DOLLAR, MAX_QUANTITY } from './cart/cart.js';
+import type { Product } from './products/products.types.js';
+import type { CartAction, CartItem, CartTotals } from './cart/cart.types.js';
+import type { CatalogState, PriceSort } from './products/catalog.js';
 
 interface UICallbacks {
   onCatalogChange: (changes: Partial<CatalogState>) => void;
@@ -69,13 +69,13 @@ export function renderCatalog(
     .map(
       (product) => `
     <article class="product-card" data-product-id="${escapeHTML(product.id)}">
-      <div class="product-image ${escapeHTML(product.color)}">${product.badge ? `<span class="product-badge">${escapeHTML(product.badge)}</span>` : ''}<img src="${escapeHTML(product.image)}" alt="${escapeHTML(product.name)} — ${escapeHTML(product.category.toLowerCase())} product illustration" loading="lazy" width="400" height="280" /></div>
-      <div class="product-details"><p class="product-category">${escapeHTML(product.category)}</p><div class="product-title-row"><h3>${escapeHTML(product.name)}</h3><span>${formatMoney(Math.round(product.price * CENTS_PER_DOLLAR))}</span></div><p class="product-description">${escapeHTML(product.description)}</p><button class="add-button" type="button" data-action="add" data-id="${escapeHTML(product.id)}" aria-label="Add ${escapeHTML(product.name)} to cart"><span>Add to cart</span><span aria-hidden="true">+</span></button></div>
+      <div class="product-image ${escapeHTML(product.color)}">${product.badge ? `<span class="product-badge">${escapeHTML(product.badge)}</span>` : ''}<img src="${escapeHTML(product.image)}" alt="${escapeHTML(product.name)} — ${escapeHTML(product.category.toLowerCase())} game cover" loading="lazy" width="400" height="280" /></div>
+      <div class="product-details"><p class="product-category">${escapeHTML(product.category)} &middot; PC &middot; Digital edition</p><div class="product-title-row"><h3>${escapeHTML(product.name)}</h3><span>${formatMoney(Math.round(product.price * CENTS_PER_DOLLAR))}</span></div><p class="product-description">${escapeHTML(product.description)}</p><button class="add-button" type="button" data-action="add" data-id="${escapeHTML(product.id)}" aria-label="Add ${escapeHTML(product.name)} to cart"><span>Add to cart</span><span aria-hidden="true">+</span></button></div>
     </article>`,
     )
     .join('');
   getElement('p', '#results-count').textContent =
-    `Showing ${products.length} of ${totalProducts} products`;
+    `Showing ${products.length} of ${totalProducts} games`;
   getElement('div', '#catalog-empty').hidden = products.length !== 0;
 }
 
@@ -94,14 +94,14 @@ export function renderCart(
     active instanceof HTMLElement ? active.dataset.action : undefined;
   container.innerHTML =
     cart.length === 0
-      ? '<div class="empty-state cart-empty"><span class="empty-symbol" aria-hidden="true">＋</span><h3>Your next loadout awaits.</h3><p>Your cart is empty. Find some gear you’ll love.</p></div>'
+      ? '<div class="empty-state cart-empty"><span class="empty-symbol" aria-hidden="true">＋</span><h3>Your next adventure awaits.</h3><p>Your cart is empty. Find a game you’ll love.</p></div>'
       : cart
           .map((item) => {
             const product = products.find((entry) => entry.id === item.id);
             if (!product) return '';
             const name = escapeHTML(product.name);
             const id = escapeHTML(item.id);
-            return `<article class="cart-item"><div class="cart-image ${escapeHTML(product.color)}"><img src="${escapeHTML(product.image)}" alt="${name} product illustration" width="100" height="85" /></div><div class="cart-item-info"><h3>${name}</h3><p>${formatMoney(Math.round(product.price * CENTS_PER_DOLLAR))} each</p><div class="quantity-control"><button type="button" data-action="decrease" data-id="${id}" aria-label="Decrease ${name} quantity">−</button><span aria-label="Quantity ${item.quantity}">${item.quantity}</span><button type="button" data-action="increase" data-id="${id}" aria-label="Increase ${name} quantity" ${item.quantity >= MAX_QUANTITY ? 'disabled' : ''}>+</button></div></div><div class="cart-item-end"><strong>${formatMoney(Math.round(product.price * CENTS_PER_DOLLAR) * item.quantity)}</strong><button class="text-button" type="button" data-action="remove" data-id="${id}" aria-label="Remove ${name} from cart">Remove</button></div></article>`;
+            return `<article class="cart-item"><div class="cart-image ${escapeHTML(product.color)}"><img src="${escapeHTML(product.image)}" alt="${name} game cover" width="100" height="85" /></div><div class="cart-item-info"><h3>${name}</h3><p>${formatMoney(Math.round(product.price * CENTS_PER_DOLLAR))} each</p><div class="quantity-control"><button type="button" data-action="decrease" data-id="${id}" aria-label="Decrease ${name} quantity">−</button><span aria-label="Quantity ${item.quantity}">${item.quantity}</span><button type="button" data-action="increase" data-id="${id}" aria-label="Increase ${name} quantity" ${item.quantity >= MAX_QUANTITY ? 'disabled' : ''}>+</button></div></div><div class="cart-item-end"><strong>${formatMoney(Math.round(product.price * CENTS_PER_DOLLAR) * item.quantity)}</strong><button class="text-button" type="button" data-action="remove" data-id="${id}" aria-label="Remove ${name} from cart">Remove</button></div></article>`;
           })
           .join('');
   getElement('span', '#cart-count').textContent = String(totals.count);
@@ -110,7 +110,7 @@ export function renderCart(
     `Open cart, ${totals.count} ${totals.count === 1 ? 'item' : 'items'}`,
   );
   getElement('p', '#cart-summary').textContent =
-    `${totals.count} ${totals.count === 1 ? 'item' : 'items'} in your loadout`;
+    `${totals.count} ${totals.count === 1 ? 'item' : 'items'} in your cart`;
   getElement('strong', '#cart-total').textContent = formatMoney(
     totals.totalCents,
   );

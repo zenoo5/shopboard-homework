@@ -1,7 +1,7 @@
 // Persist compact cart entries and recover safely from untrusted or blocked storage.
-import { MAX_QUANTITY } from './cart.js';
-import type { Product } from './products.types.js';
-import type { CartItem } from './cart.types.js';
+import { MAX_QUANTITY } from './cart/cart.js';
+import type { Product } from './products/products.types.js';
+import type { CartItem } from './cart/cart.types.js';
 
 type CartStorage = Pick<Storage, 'getItem' | 'setItem'>;
 

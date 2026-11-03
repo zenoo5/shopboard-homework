@@ -1,5 +1,5 @@
 // Keep cart transformations immutable and calculate currency using integer cents.
-import type { Product } from './products.types.js';
+import type { Product } from '../products/products.types.js';
 import type { CartItem, CartTotals } from './cart.types.js';
 export const MAX_QUANTITY = 999;
 export const CENTS_PER_DOLLAR = 100;

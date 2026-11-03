@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
-import { CART_STORAGE_KEY } from '../.test-build/storage.js';
+import { CART_STORAGE_KEY } from '../.test-build/modules/storage.js';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 let instance = 0;
@@ -32,26 +32,26 @@ test('4 and 11: repeated catalog changes preserve controls and one click adds ex
   const dom = await mount();
   try {
     for (let repeat = 0; repeat < 5; repeat++) {
-      change(dom, '#search', 'PHANTOM', 'input');
-      change(dom, '#category', 'Keyboards');
+      change(dom, '#search', 'ECHOES', 'input');
+      change(dom, '#category', 'RPG');
       change(dom, '#sort', 'price-asc');
     }
     assert.equal(document.querySelectorAll('#product-grid article').length, 2);
     assert.equal(
       document.querySelector('#product-grid article').dataset.productId,
-      'phantom-mini',
+      'echoes-of-earth',
     );
-    assert.equal(document.querySelector('#search').value, 'PHANTOM');
-    assert.equal(document.querySelector('#category').value, 'Keyboards');
+    assert.equal(document.querySelector('#search').value, 'ECHOES');
+    assert.equal(document.querySelector('#category').value, 'RPG');
     document.querySelector('#product-grid [data-action="add"]').click();
     assert.equal(document.querySelector('#cart-count').textContent, '1');
     assert.deepEqual(JSON.parse(localStorage.getItem(CART_STORAGE_KEY)), [
-      { id: 'phantom-mini', quantity: 1 },
+      { id: 'echoes-of-earth', quantity: 1 },
     ]);
     document.querySelector('#product-grid [data-action="add"]').click();
     assert.equal(document.querySelectorAll('#cart-items article').length, 1);
     assert.equal(document.querySelector('#cart-count').textContent, '2');
-    assert.equal(document.querySelector('#cart-total').textContent, '$179.98');
+    assert.equal(document.querySelector('#cart-total').textContent, '$39.98');
   } finally {
     dom.window.close();
   }
@@ -61,33 +61,31 @@ test('5–9: cart buttons update count, totals, storage, and other entries immed
   const dom = await mount();
   try {
     document
-      .querySelector('[data-id="phantom-k75"][data-action="add"]')
+      .querySelector('[data-id="echoes-of-orion"][data-action="add"]')
       .click();
+    document.querySelector('[data-id="neon-drift"][data-action="add"]').click();
     document
-      .querySelector('[data-id="pulse-wireless"][data-action="add"]')
-      .click();
-    document
-      .querySelector('[data-id="phantom-k75"][data-action="increase"]')
+      .querySelector('[data-id="echoes-of-orion"][data-action="increase"]')
       .click();
     assert.equal(document.querySelector('#cart-count').textContent, '3');
-    assert.equal(document.querySelector('#cart-total').textContent, '$329.97');
+    assert.equal(document.querySelector('#cart-total').textContent, '$104.97');
     document
-      .querySelector('[data-id="phantom-k75"][data-action="decrease"]')
+      .querySelector('[data-id="echoes-of-orion"][data-action="decrease"]')
       .click();
-    assert.equal(document.querySelector('#cart-total').textContent, '$199.98');
+    assert.equal(document.querySelector('#cart-total').textContent, '$64.98');
     document
-      .querySelector('[data-id="phantom-k75"][data-action="decrease"]')
+      .querySelector('[data-id="echoes-of-orion"][data-action="decrease"]')
       .click();
     assert.equal(document.querySelector('#cart-count').textContent, '1');
-    assert.equal(document.querySelector('#cart-total').textContent, '$69.99');
+    assert.equal(document.querySelector('#cart-total').textContent, '$24.99');
     document
-      .querySelector('[data-id="phantom-k75"][data-action="add"]')
+      .querySelector('[data-id="echoes-of-orion"][data-action="add"]')
       .click();
     document
-      .querySelector('[data-id="phantom-k75"][data-action="remove"]')
+      .querySelector('[data-id="echoes-of-orion"][data-action="remove"]')
       .click();
     assert.deepEqual(JSON.parse(localStorage.getItem(CART_STORAGE_KEY)), [
-      { id: 'pulse-wireless', quantity: 1 },
+      { id: 'neon-drift', quantity: 1 },
     ]);
     document.querySelector('#clear-cart').click();
     assert.equal(document.querySelector('#cart-count').textContent, '0');
@@ -102,14 +100,18 @@ test('5–9: cart buttons update count, totals, storage, and other entries immed
 
 test('10: a fresh application instance restores saved quantities and totals', async () => {
   const first = await mount();
-  document.querySelector('[data-id="phantom-k75"][data-action="add"]').click();
-  document.querySelector('[data-id="phantom-k75"][data-action="add"]').click();
+  document
+    .querySelector('[data-id="echoes-of-orion"][data-action="add"]')
+    .click();
+  document
+    .querySelector('[data-id="echoes-of-orion"][data-action="add"]')
+    .click();
   const saved = localStorage.getItem(CART_STORAGE_KEY);
   first.window.close();
   const second = await mount(saved);
   try {
     assert.equal(document.querySelector('#cart-count').textContent, '2');
-    assert.equal(document.querySelector('#cart-total').textContent, '$259.98');
+    assert.equal(document.querySelector('#cart-total').textContent, '$79.98');
     assert.equal(document.querySelectorAll('#cart-items article').length, 1);
   } finally {
     second.window.close();
@@ -119,7 +121,7 @@ test('10: a fresh application instance restores saved quantities and totals', as
 test('empty results offer a reset that clears all catalog controls', async () => {
   const dom = await mount();
   try {
-    change(dom, '#category', 'Mice');
+    change(dom, '#category', 'Racing');
     change(dom, '#sort', 'price-desc');
     change(dom, '#search', 'nothing-matches', 'input');
     assert.equal(document.querySelectorAll('#product-grid article').length, 0);
