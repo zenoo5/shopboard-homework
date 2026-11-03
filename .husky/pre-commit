@@ -1,0 +1,2 @@
+# Check TypeScript, then run formatting and lint checks on staged files.
+npm run typecheck && npx lint-staged
