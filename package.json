@@ -8,7 +8,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test:compile": "tsc --noEmit false --declaration false --declarationMap false --sourceMap false --rootDir src --outDir .test-build",
+    "test:compile": "tsc -p tsconfig.test.json",
     "test": "npm run test:compile && node --test tests/*.test.js",
     "test:core": "npm run test:compile && node --test tests/core.test.js",
     "test:ui": "npm run test:compile && node --test tests/ui.test.js",
@@ -18,10 +18,12 @@
     "format:check": "prettier --check .",
     "check": "npm run typecheck && npm run test && npm run lint && npm run format:check && npm run build",
     "prepare": "node scripts/prepare.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check:dev": "npm run typecheck && npm test && npm run lint && npm run format:check"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "@types/node": "^22.20.5",
     "eslint": "^9.39.0",
     "globals": "^16.5.0",
     "husky": "^9.1.7",

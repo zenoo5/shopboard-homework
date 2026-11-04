@@ -13,3 +13,9 @@ export interface Product {
   badge?: string;
   color?: string;
 }
+
+export type LoadState<T> =
+  | { status: 'loading' }
+  | { status: 'success'; data: T }
+  | { status: 'error'; message: string }
+  | { status: 'empty' };

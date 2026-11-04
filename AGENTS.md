@@ -1,14 +1,16 @@
 ﻿# Respawn Shop contributor instructions
 
-Respawn Shop is a browser-local gaming accessories storefront built with Vite,
+Respawn Shop is a digital PC game storefront built with Vite,
 vanilla TypeScript ES modules, semantic HTML, and mobile-first CSS. It has catalog
 search, category filtering, price sorting, a persistent cart, and a demo newsletter
-form. There are no runtime library dependencies or backend services.
+form. The catalog is served by a read-only TypeScript Vercel Function at GET /api/products.
+There are no runtime library dependencies, databases, or external API services.
 
 ## Commands
 
 - `npm ci`: install locked dependencies with Node.js 22.12 or later.
-- `npm run dev`: start Vite locally.
+- `npm run dev`: start Vite and the same products API handler together at 127.0.0.1:5173.
+- `npm run check:dev`: run typecheck, tests, lint, and formatting without a production build.
 - `npm run typecheck`: check strict TypeScript without emitting files.
 - `npm test`: compile to ignored `.test-build/` and run Node tests with jsdom.
 - `npm run test:core` / `npm run test:ui`: run either test group.
@@ -23,16 +25,21 @@ TypeScript, HTML, CSS, JSON, Markdown, and SVG files get formatting.
 
 ## Structure
 
+- `api/products.ts`: Vercel products endpoint, also served by the local Vite adapter.
+- `vite.config.ts`: local HTTP adapter for the same function, without a second server.
+- `src/shared/api/client.ts`: validated JSON transport and ApiError handling.
+- `src/modules/products/products.api.ts`: API validation and Product mapping.
+- `tsconfig.test.json`: compile source and API for the Node test suite.
 - `index.html`: semantic page shell and native cart dialog.
 - `src/style.css`: all application styles.
 - `src/main.ts`: catalog/cart state and module coordination.
-- `src/products.ts` / `src/products.types.ts`: product data and product types.
-- `src/catalog.ts`: pure search, filter, sort logic, and catalog types.
-- `src/cart.ts` / `src/cart.types.ts`: immutable cart operations, totals, and types.
-- `src/storage.ts`: validated localStorage loading and saving.
-- `src/ui.ts`: application DOM access, rendering, and event handling.
+- `src/modules/products/products.ts` / `src/modules/products/products.types.ts`: product data and product types.
+- `src/modules/products/catalog.ts`: pure search, filter, sort logic, and catalog types.
+- `src/modules/cart/cart.ts` / `src/modules/cart/cart.types.ts`: immutable cart operations, totals, and types.
+- `src/modules/cart/storage.ts`: validated localStorage loading and saving.
+- `src/shared/ui.ts`: application DOM access, rendering, and event handling.
 - `public/images/`: illustrations and logo used by the website.
-- `tests/core.test.js` / `tests/ui.test.js`: logic and simulated DOM tests.
+- `tests/core.test.js` / `tests/ui.test.js` / `tests/api.test.js`: logic, DOM, and API tests.
 - `scripts/prepare.mjs`: initialize Husky when a Git checkout exists.
 - `debugging-log.md`: attributed debugging findings.
 

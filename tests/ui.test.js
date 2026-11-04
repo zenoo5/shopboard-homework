@@ -3,21 +3,37 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
-import { CART_STORAGE_KEY } from '../.test-build/modules/cart/storage.js';
+import productsHandler from '../.test-build/api/products.js';
+import { render } from '../.test-build/src/modules/products/products.ui.js';
+import { products } from '../.test-build/src/modules/products/products.js';
+import { CART_STORAGE_KEY } from '../.test-build/src/modules/cart/storage.js';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 let instance = 0;
 
+// Exercise the actual function contract when mocking the browser's HTTP transport.
+async function requestProducts(path, options) {
+  return productsHandler.fetch(
+    new Request(new URL(path, 'http://localhost'), options),
+  );
+}
+
 // Mount the real HTML and entry module with a fresh browser-like environment.
-async function mount(saved = null) {
+async function mount(
+  saved = null,
+  fetcher = requestProducts,
+  waitUntilReady = true,
+) {
   const dom = new JSDOM(html, { url: 'http://localhost/' });
+  globalThis.fetch = fetcher;
   globalThis.document = dom.window.document;
   globalThis.localStorage = dom.window.localStorage;
   globalThis.Element = dom.window.Element;
   globalThis.HTMLElement = dom.window.HTMLElement;
   globalThis.HTMLButtonElement = dom.window.HTMLButtonElement;
   if (saved !== null) localStorage.setItem(CART_STORAGE_KEY, saved);
-  await import(`../.test-build/main.js?test=${instance++}`);
+  const app = await import(`../.test-build/src/main.js?test=${instance++}`);
+  if (waitUntilReady) await app.ready;
   return dom;
 }
 
@@ -127,6 +143,13 @@ test('empty results offer a reset that clears all catalog controls', async () =>
     change(dom, '#sort', 'price-desc');
     change(dom, '#search', 'nothing-matches', 'input');
     assert.equal(document.querySelectorAll('#product-grid article').length, 0);
+    assert.equal(document.querySelector('#catalog-empty').hidden, false);
+    assert.equal(document.querySelector('#products-api-empty').hidden, true);
+    assert.equal(
+      document.querySelector('#products-request-error').hidden,
+      true,
+    );
+    assert.equal(document.querySelector('#search').disabled, false);
     document.querySelector('#reset-filters').click();
     assert.equal(document.querySelectorAll('#product-grid article').length, 12);
     assert.equal(document.querySelector('#search').value, '');
@@ -247,6 +270,239 @@ test('featured game adds through the same persistent cart as the library', async
     assert.deepEqual(JSON.parse(localStorage.getItem(CART_STORAGE_KEY)), [
       { id: 'cyberpunk-2077', quantity: 2 },
     ]);
+  } finally {
+    dom.window.close();
+  }
+});
+
+test('loading waits for the API without clearing an existing saved cart', async () => {
+  let deliver;
+  const pending = new Promise((resolve) => {
+    deliver = resolve;
+  });
+  const saved = JSON.stringify([{ id: 'cyberpunk-2077', quantity: 2 }]);
+  const dom = await mount(saved, () => pending, false);
+  try {
+    assert.equal(
+      document.querySelector('#products-request-status').hidden,
+      false,
+    );
+    assert.equal(
+      document.querySelector('#product-grid').getAttribute('aria-busy'),
+      'true',
+    );
+    assert.equal(document.querySelector('#search').disabled, true);
+    assert.equal(document.querySelectorAll('#product-grid article').length, 0);
+    assert.equal(localStorage.getItem(CART_STORAGE_KEY), saved);
+    deliver(await requestProducts('/api/products'));
+    await new Promise(setImmediate);
+    assert.equal(document.querySelectorAll('#product-grid article').length, 12);
+    assert.equal(document.querySelectorAll('.hero-card').length, 5);
+    assert.equal(
+      document.querySelector('#featured-game h3').textContent,
+      'Cyberpunk 2077',
+    );
+    assert.equal(document.querySelector('#cart-count').textContent, '2');
+    assert.equal(document.querySelector('#cart-total').textContent, '$79.98');
+    assert.equal(
+      document.querySelector('#products-request-status').hidden,
+      true,
+    );
+  } finally {
+    dom.window.close();
+  }
+});
+
+test('API failures show an error with no fallback and retry restores the existing features once', async () => {
+  const dom = await mount(null, async () => {
+    throw new TypeError('offline');
+  });
+  try {
+    assert.equal(
+      document.querySelector('#products-request-error').hidden,
+      false,
+    );
+    assert.match(
+      document.querySelector('#products-request-message').textContent,
+      /Unable to load games/,
+    );
+    assert.equal(document.querySelector('#catalog-empty').hidden, true);
+    assert.equal(document.querySelectorAll('#product-grid article').length, 0);
+    globalThis.fetch = requestProducts;
+    document.querySelector('#retry-products').click();
+    await new Promise(setImmediate);
+    assert.equal(
+      document.querySelector('#products-request-error').hidden,
+      true,
+    );
+    assert.equal(document.querySelectorAll('#product-grid article').length, 12);
+    assert.equal(document.querySelector('#search').disabled, false);
+    document.querySelector('#product-grid [data-action="add"]').click();
+    assert.equal(document.querySelector('#cart-count').textContent, '1');
+    assert.deepEqual(JSON.parse(localStorage.getItem(CART_STORAGE_KEY)), [
+      { id: 'cyberpunk-2077', quantity: 1 },
+    ]);
+  } finally {
+    dom.window.close();
+  }
+});
+
+test('the dedicated renderer resets stale content through all four states', async () => {
+  const dom = await mount();
+  try {
+    render({ status: 'loading' });
+    assert.equal(
+      document.querySelector('#products-request-status').hidden,
+      false,
+    );
+    assert.equal(
+      document.querySelector('#product-grid').getAttribute('aria-busy'),
+      'true',
+    );
+    assert.equal(document.querySelectorAll('#product-grid article').length, 0);
+    assert.equal(document.querySelector('#products-api-empty').hidden, true);
+    render({ status: 'error', message: 'Checkpoint failure' });
+    assert.equal(
+      document.querySelector('#products-request-status').hidden,
+      true,
+    );
+    assert.equal(
+      document.querySelector('#products-request-error').hidden,
+      false,
+    );
+    assert.equal(
+      document.querySelector('#products-request-message').textContent,
+      'Checkpoint failure',
+    );
+    assert.equal(
+      document.querySelector('#retry-products').textContent.trim(),
+      'Try again',
+    );
+    assert.equal(
+      document.querySelector('#product-grid').getAttribute('aria-busy'),
+      'false',
+    );
+    render({ status: 'empty' });
+    assert.equal(
+      document.querySelector('#products-request-error').hidden,
+      true,
+    );
+    assert.equal(document.querySelector('#products-api-empty').hidden, false);
+    assert.equal(document.querySelector('#catalog-empty').hidden, true);
+    assert.equal(
+      document.querySelector('#results-count').textContent,
+      '0 games available',
+    );
+    render({ status: 'success', data: products });
+    assert.equal(document.querySelectorAll('#product-grid article').length, 12);
+    assert.equal(document.querySelector('#products-api-empty').hidden, true);
+    assert.equal(
+      document.querySelector('#products-request-message').textContent,
+      '',
+    );
+    assert.equal(document.querySelector('#search').disabled, false);
+    render({ status: 'success', data: [] });
+    assert.equal(document.querySelector('#products-api-empty').hidden, false);
+    assert.equal(document.querySelector('#catalog-empty').hidden, true);
+  } finally {
+    dom.window.close();
+  }
+});
+
+test('an empty API catalog is distinct from no matches and preserves a saved cart until recovery', async () => {
+  let requests = 0;
+  const saved = JSON.stringify([{ id: 'cyberpunk-2077', quantity: 2 }]);
+  const fetcher = async (path, options) => {
+    requests++;
+    assert.equal(path, '/api/products');
+    return requests === 1
+      ? Response.json({ items: [], total: 0 })
+      : requestProducts(path, options);
+  };
+  const dom = await mount(saved, fetcher);
+  try {
+    assert.equal(document.querySelector('#products-api-empty').hidden, false);
+    assert.equal(document.querySelector('#catalog-empty').hidden, true);
+    assert.equal(
+      document.querySelector('#products-request-error').hidden,
+      true,
+    );
+    assert.equal(document.querySelectorAll('#product-grid article').length, 0);
+    assert.equal(document.querySelector('#search').disabled, true);
+    assert.equal(document.querySelector('#open-cart').disabled, true);
+    assert.equal(localStorage.getItem(CART_STORAGE_KEY), saved);
+    document.querySelector('#reload-products').click();
+    await new Promise(setImmediate);
+    assert.equal(requests, 2);
+    assert.equal(document.querySelector('#products-api-empty').hidden, true);
+    assert.equal(document.querySelectorAll('#product-grid article').length, 12);
+    assert.equal(document.querySelectorAll('.hero-card').length, 5);
+    assert.equal(
+      document.querySelector('#featured-game h3').textContent,
+      'Cyberpunk 2077',
+    );
+    assert.equal(document.querySelector('#cart-count').textContent, '2');
+    assert.equal(document.querySelector('#cart-total').textContent, '$79.98');
+    assert.equal(document.querySelector('#search').disabled, false);
+    assert.equal(document.querySelectorAll('#category option').length, 6);
+    change(dom, '#search', 'nothing-matches', 'input');
+    assert.equal(document.querySelector('#catalog-empty').hidden, false);
+    assert.equal(document.querySelector('#products-api-empty').hidden, true);
+    document.querySelector('#reset-filters').click();
+    assert.equal(document.querySelectorAll('#product-grid article').length, 12);
+  } finally {
+    dom.window.close();
+  }
+});
+
+test('Try again makes a new HTTP request and prevents duplicate concurrent retries', async () => {
+  let requests = 0;
+  let deliver;
+  const pending = new Promise((resolve) => {
+    deliver = resolve;
+  });
+  const fetcher = async () => {
+    requests++;
+    return requests === 1
+      ? Response.json({ error: 'Service unavailable' }, { status: 503 })
+      : pending;
+  };
+  const dom = await mount(null, fetcher);
+  try {
+    const retry = document.querySelector('#retry-products');
+    assert.equal(
+      document.querySelector('#products-request-error').hidden,
+      false,
+    );
+    assert.match(
+      document.querySelector('#products-request-message').textContent,
+      /Service unavailable/,
+    );
+    retry.click();
+    retry.click();
+    assert.equal(requests, 2);
+    assert.equal(retry.disabled, true);
+    assert.equal(
+      document.querySelector('#products-request-status').hidden,
+      false,
+    );
+    assert.equal(
+      document.querySelector('#products-request-error').hidden,
+      true,
+    );
+    deliver(await requestProducts('/api/products'));
+    await new Promise(setImmediate);
+    assert.equal(document.querySelectorAll('#product-grid article').length, 12);
+    assert.equal(
+      document.querySelector('#products-request-status').hidden,
+      true,
+    );
+    assert.equal(
+      document.querySelector('#products-request-error').hidden,
+      true,
+    );
+    document.querySelector('#product-grid [data-action="add"]').click();
+    assert.equal(document.querySelector('#cart-count').textContent, '1');
   } finally {
     dom.window.close();
   }

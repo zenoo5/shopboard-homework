@@ -233,6 +233,38 @@
             role="status"
             aria-live="polite"
           ></p>
+          <p
+            id="products-request-status"
+            class="muted"
+            role="status"
+            aria-live="polite"
+          >
+            Loading games&hellip;
+          </p>
+          <div id="products-request-error" class="empty-state" hidden>
+            <p id="products-request-message" role="alert"></p>
+            <button
+              id="retry-products"
+              class="button button-lime"
+              type="button"
+            >
+              Try again
+            </button>
+          </div>
+          <div id="products-api-empty" class="empty-state" hidden>
+            <h3>No games available.</h3>
+            <p>
+              There are no games in the catalog right now. Please check again
+              later.
+            </p>
+            <button
+              id="reload-products"
+              class="button button-lime"
+              type="button"
+            >
+              Check again
+            </button>
+          </div>
           <div class="product-grid" id="product-grid"></div>
           <div id="catalog-empty" class="empty-state" hidden>
             <h3>No games found.</h3>

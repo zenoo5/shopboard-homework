@@ -2,20 +2,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { selectProducts } from '../.test-build/modules/products/catalog.js';
+import { selectProducts } from '../.test-build/src/modules/products/catalog.js';
 import {
   addItem,
   decreaseItem,
   removeItem,
   clearCart,
   getCartTotals,
-} from '../.test-build/modules/cart/cart.js';
+} from '../.test-build/src/modules/cart/cart.js';
 import {
   loadCart,
   saveCart,
   CART_STORAGE_KEY,
-} from '../.test-build/modules/cart/storage.js';
-import { products } from '../.test-build/modules/products/products.js';
+} from '../.test-build/src/modules/cart/storage.js';
+import { products } from '../.test-build/src/modules/products/products.js';
 
 const sample = [
   { id: 'a', name: 'Alpha RPG', category: 'RPG', price: 29.99 },

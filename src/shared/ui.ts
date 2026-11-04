@@ -14,7 +14,7 @@ interface UICallbacks {
 }
 
 // Find a required element of the expected HTML tag, or explain the missing markup.
-function getElement<Tag extends keyof HTMLElementTagNameMap>(
+export function getElement<Tag extends keyof HTMLElementTagNameMap>(
   tag: Tag,
   selector: string,
 ): HTMLElementTagNameMap[Tag] {

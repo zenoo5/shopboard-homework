@@ -1,5 +1,11 @@
 // Coordinate catalog state, cart transformations, persistence, and the UI module.
-import { products } from './modules/products/products.js';
+import { getProducts } from './modules/products/products.api.js';
+import type { LoadState, Product } from './modules/products/products.types.js';
+import {
+  initialize as initializeProductsUI,
+  render,
+} from './modules/products/products.ui.js';
+import { ApiError } from './shared/api/client.js';
 import type { CatalogState } from './modules/products/catalog.js';
 import type { CartAction, CartItem } from './modules/cart/cart.types.js';
 import { selectProducts } from './modules/products/catalog.js';
@@ -25,21 +31,27 @@ let catalogState: CatalogState = {
   category: 'all',
   sort: 'default',
 };
-let cart: CartItem[] = loadCart(products);
+let productState: LoadState<Product[]> = { status: 'loading' };
+let cart: CartItem[] = [];
 
 // Render the current cart together with its derived count and subtotal.
 function refreshCart(): void {
+  const products = productState.status === 'success' ? productState.data : [];
   renderCart(cart, products, getCartTotals(cart, products));
 }
 
 // Merge only the changed catalog controls before rendering matching products.
 function handleCatalogChange(changes: Partial<CatalogState>): void {
+  if (productState.status !== 'success') return;
+  const products = productState.data;
   catalogState = { ...catalogState, ...changes };
   renderCatalog(selectProducts(products, catalogState), products.length);
 }
 
 // Apply one cart action, persist its result, then update all displayed totals.
 function handleCartAction(action: CartAction, id = ''): void {
+  if (productState.status !== 'success') return;
+  const products = productState.data;
   const product = products.find((entry) => entry.id === id);
   const previousQuantity = cart.find((entry) => entry.id === id)?.quantity ?? 0;
   if (action === 'add' || action === 'increase') {
@@ -72,9 +84,37 @@ function handleCartAction(action: CartAction, id = ''): void {
   }
 }
 
-initializeUI(products, {
-  onCatalogChange: handleCatalogChange,
-  onCartAction: handleCartAction,
+// Fetch before restoring saved carts so failed or empty responses cannot discard stored IDs.
+async function loadProducts(): Promise<void> {
+  productState = { status: 'loading' };
+  render(productState);
+  try {
+    const products = await getProducts();
+    if (products.length === 0) {
+      productState = { status: 'empty' };
+      render(productState);
+      return;
+    }
+    productState = { status: 'success', data: products };
+    cart = loadCart(products);
+    initializeUI(products, {
+      onCatalogChange: handleCatalogChange,
+      onCartAction: handleCartAction,
+    });
+    render(productState);
+    refreshCart();
+  } catch (error: unknown) {
+    const message =
+      error instanceof ApiError ? error.message : 'Please try again.';
+    productState = {
+      status: 'error',
+      message: 'Unable to load games. ' + message,
+    };
+    render(productState);
+  }
+}
+
+initializeProductsUI(() => {
+  if (productState.status !== 'loading') void loadProducts();
 });
-handleCatalogChange({});
-refreshCart();
+export const ready: Promise<void> = loadProducts();
